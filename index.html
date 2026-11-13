@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>UDMPAY — Приём платежей без кассы и терминала (2026 Light Liquid Glass)</title>
+    <!-- Подключение Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Шрифты 2026: Manrope (заголовки), Inter (текст), JetBrains Mono (цифры и коды) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Manrope', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        mintPrimary: '#10B981',
+                        mintDeep: '#059669',
+                        iceSky: '#0EA5E9',
+                        limeSoft: '#A7F3D0',
+                        inkDark: '#0F172A',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* =====================================================================
+           2026 LIGHT LIQUID GLASS (iOS 26) + FRESH ATMOSPHERIC MESH + FILM GRAIN
+           ===================================================================== */
+        :root {
+            --bg-pure: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #475569;
+            --glass-light-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.64) 55%, rgba(240, 253, 250, 0.80) 100%);
+            --glass-light-border: rgba(255, 255, 255, 0.95);
+            --glass-light-shadow:
+                inset 0 1.5px 1px rgba(255, 255, 255, 1),
+                inset 1px 0 1px rgba(255, 255, 255, 0.85),
+                0 18px 42px -12px rgba(15, 23, 42, 0.08),
+                0 0 0 1px rgba(15, 23, 42, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-pure);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, .font-display {
+            font-family: 'Manrope', sans-serif;
+        }
+
+        .font-mono-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ---------------------------------------------------------------------
+           СВЕЖИЕ АТМОСФЕРНЫЕ MESH-ГРАДИЕНТЫ НА БЕЛОМ ФОНЕ
+           --------------------------------------------------------------------- */
+        .ambient-light-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+            background: linear-gradient(160deg, #FFFFFF 0%, #F8FAFC 52%, #F0FDF4 100%);
+        }
+
+        .mesh-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(110px);
+            will-change: transform;
+            animation: driftMesh 18s ease-in-out infinite alternate;
+        }
+
+        .blob-mint {
+            width: 560px;
+            height: 560px;
+            top: -140px;
+            right: -90px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.30) 0%, rgba(16, 185, 129, 0) 70%);
+            animation-duration: 16s;
+        }
+
+        .blob-sky {
+            width: 620px;
+            height: 620px;
+            bottom: -180px;
+            left: -120px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.24) 0%, rgba(14, 165, 233, 0) 70%);
+            animation-duration: 21s;
+            animation-delay: -4s;
+        }
+
+        .blob-lime {
+            width: 500px;
+            height: 500px;
+            top: 28%;
+            left: 36%;
+            background: radial-gradient(circle, rgba(167, 243, 208, 0.55) 0%, rgba(167, 243, 208, 0) 72%);
+            animation-duration: 24s;
+            animation-delay: -7s;
+        }
+
+        @keyframes driftMesh {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            50% { transform: translate3d(-26px, 20px, 0) scale(1.06); }
+            100% { transform: translate3d(22px, -18px, 0) scale(0.96); }
+        }
+
+        /* Деликатная плёночная зернистость (Film Grain) на белом фоне */
+        .film-grain-light {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.032;
+            mix-blend-mode: multiply;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseLight'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseLight)'/%3E%3C/svg%3E");
+        }
+
+        /* ---------------------------------------------------------------------
+           LIGHT LIQUID GLASS (iOS 26) ПОВЕРХНОСТИ И ЗЕРКАЛЬНЫЕ БЛИКИ
+           --------------------------------------------------------------------- */
+        .liquid-glass {
+            background: var(--glass-light-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-light-border);
+            box-shadow: var(--glass-light-shadow);
+            border-radius: 26px;
+            position: relative;
+        }
+
+        .liquid-glass-emerald {
+            background: linear-gradient(135deg, rgba(236, 253, 245, 0.92) 0%, rgba(209, 250, 229, 0.72) 55%, rgba(224, 242, 254, 0.82) 100%);
+            backdrop-filter: blur(26px) saturate(190%);
+            -webkit-backdrop-filter: blur(26px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.98);
+            box-shadow:
+                inset 0 1.5px 1px rgba(255, 255, 255, 1),
+                0 20px 44px -12px rgba(16, 185, 129, 0.18),
+                0 0 0 1.5px rgba(16, 185, 129, 0.28);
+            border-radius: 28px;
+            position: relative;
+        }
+
+        .liquid-glass-rose {
+            background: linear-gradient(135deg, rgba(255, 241, 242, 0.88) 0%, rgba(255, 255, 255, 0.72) 100%);
+            backdrop-filter: blur(22px) saturate(170%);
+            -webkit-backdrop-filter: blur(22px) saturate(170%);
+            border: 1px solid rgba(255, 255, 255, 0.95);
+            box-shadow:
+                inset 0 1.5px 1px rgba(255, 255, 255, 1),
+                0 16px 36px -12px rgba(244, 63, 94, 0.10),
+                0 0 0 1px rgba(244, 63, 94, 0.20);
+            border-radius: 26px;
+        }
+
+        .liquid-pill {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.68) 100%);
+            backdrop-filter: blur(22px) saturate(185%);
+            -webkit-backdrop-filter: blur(22px) saturate(185%);
+            border: 1px solid rgba(255, 255, 255, 0.98);
+            box-shadow:
+                inset 0 1px 1px rgba(255, 255, 255, 1),
+                0 10px 26px -6px rgba(15, 23, 42, 0.08),
+                0 0 0 1px rgba(15, 23, 42, 0.06);
+            border-radius: 9999px;
+        }
+
+        /* Градиентный акцентный текст (Изумруд -> Ледяной голубой) */
+        .text-gradient-fresh {
+            background: linear-gradient(120deg, #059669 0%, #10B981 48%, #0284C7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ---------------------------------------------------------------------
+           3D-СЦЕНА НА ГЛАВНОМ ЭКРАНЕ (SLIDE 01 — CSS 3D PERSPECTIVE & PARALLAX)
+           --------------------------------------------------------------------- */
+        .hero-3d-viewport {
+            perspective: 1200px;
+            perspective-origin: 50% 50%;
+        }
+
+        .hero-3d-stage {
+            transform-style: preserve-3d;
+            transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
+
+        .layer-z-base {
+            transform: translateZ(15px);
+            transform-style: preserve-3d;
+        }
+
+        .layer-z-mid {
+            transform: translateZ(45px);
+            transform-style: preserve-3d;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, opacity 0.35s ease;
+        }
+
+        .layer-z-high {
+            transform: translateZ(78px);
+            transform-style: preserve-3d;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, opacity 0.35s ease;
+        }
+
+        .layer-z-top {
+            transform: translateZ(95px);
+            transform-style: preserve-3d;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, opacity 0.35s ease;
+        }
+
+        /* Подсветка активного 3D-узла при клике */
+        .node-3d-card {
+            cursor: pointer;
+        }
+
+        .node-3d-card.is-highlighted {
+            box-shadow:
+                inset 0 1.5px 1px rgba(255, 255, 255, 1),
+                0 24px 48px -10px rgba(16, 185, 129, 0.32),
+                0 0 0 2.5px #10B981 !important;
+        }
+
+        .node-3d-card.is-dimmed {
+            opacity: 0.52;
+        }
+
+        /* Анимация световых импульсов по SVG-линиям в 3D-схеме */
+        @keyframes dashFlow {
+            to {
+                stroke-dashoffset: -48;
+            }
+        }
+
+        .flow-beam {
+            stroke-dasharray: 10 14;
+            animation: dashFlow 1.4s linear infinite;
+        }
+
+        @keyframes floatGentle3D {
+            0%, 100% { margin-top: 0px; }
+            50% { margin-top: -7px; }
+        }
+
+        .float-3d-slow {
+            animation: floatGentle3D 4.5s ease-in-out infinite;
+        }
+
+        /* Ползунок калькулятора в стиле iOS 26 Light */
+        input[type="range"].glass-slider-light {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 10px;
+            background: rgba(15, 23, 42, 0.08);
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"].glass-slider-light::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #FFFFFF 0%, #34D399 45%, #059669 100%);
+            border: 3px solid #FFFFFF;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.48), 0 2px 6px rgba(15, 23, 42, 0.18);
+            cursor: pointer;
+            transition: transform 0.16s ease;
+        }
+
+        input[type="range"].glass-slider-light::-webkit-slider-thumb:hover {
+            transform: scale(1.12);
+        }
+
+        input[type="range"].glass-slider-light::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #FFFFFF 0%, #34D399 45%, #059669 100%);
+            border: 3px solid #FFFFFF;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.48);
+            cursor: pointer;
+        }
+
+        /* ---------------------------------------------------------------------
+           АДАПТАЦИЯ СЦЕНЫ: ДЕСКТОП (100dvh СЛАЙДЫ) И МОБИЛЬНЫЕ УСТРОЙСТВА
+           --------------------------------------------------------------------- */
+        @media (min-width: 1024px) {
+            body {
+                height: 100dvh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            #deck-viewport {
+                flex: 1;
+                position: relative;
+                z-index: 10;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 58px 28px 78px 28px;
+                overflow: hidden;
+            }
+
+            .slide {
+                display: none;
+                width: 100%;
+                max-width: 1280px;
+                height: 100%;
+                max-height: 700px;
+                flex-direction: column;
+                justify-content: space-between;
+                animation: slideEnterDesktop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+
+            .slide.active {
+                display: flex;
+            }
+
+            @keyframes slideEnterDesktop {
+                from {
+                    opacity: 0;
+                    transform: translateY(14px) scale(0.985);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+        }
+
+        @media (max-width: 1023px) {
+            body {
+                min-height: 100dvh;
+            }
+
+            #deck-viewport {
+                position: relative;
+                z-index: 10;
+                padding: 66px 14px 96px 14px;
+            }
+
+            .slide {
+                display: none;
+                width: 100%;
+                max-width: 760px;
+                margin: 0 auto;
+                flex-direction: column;
+                gap: 18px;
+                animation: slideEnterMobile 0.3s ease-out forwards;
+            }
+
+            .slide.active {
+                display: flex;
+            }
+
+            @keyframes slideEnterMobile {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        }
+
+        /* Пульсация кольца NFC */
+        @keyframes pulseWave {
+            0% { transform: scale(0.85); opacity: 0.75; }
+            100% { transform: scale(1.65); opacity: 0; }
+        }
+
+        .nfc-ring {
+            animation: pulseWave 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+        }
+
+        /* ---------------------------------------------------------------------
+           РЕЖИМ ЭКСПОРТА В PDF / ПЕЧАТЬ (@media print)
+           --------------------------------------------------------------------- */
+        @media print {
+            @page {
+                size: landscape;
+                margin: 0;
+            }
+
+            html, body {
+                width: 1280px !important;
+                height: auto !important;
+                overflow: visible !important;
+                background: #FFFFFF !important;
+                color: #0F172A !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .no-print, .film-grain-light {
+                display: none !important;
+            }
+
+            .ambient-light-canvas {
+                position: fixed !important;
+                opacity: 0.45 !important;
+            }
+
+            #deck-viewport {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .slide {
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                width: 1280px !important;
+                height: 720px !important;
+                max-width: none !important;
+                max-height: none !important;
+                padding: 36px 48px !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                animation: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+                background: #FFFFFF !important;
+            }
+
+            .slide:last-child {
+                page-break-after: auto !important;
+                break-after: auto !important;
+            }
+
+            .liquid-glass, .liquid-glass-emerald, .liquid-glass-rose {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: #F8FAFC !important;
+                border: 1px solid #CBD5E1 !important;
+                box-shadow: none !important;
+            }
+
+            .liquid-glass-emerald {
+                background: #ECFDF5 !important;
+                border: 1.5px solid #10B981 !important;
+            }
+
+            .hero-3d-stage, .layer-z-base, .layer-z-mid, .layer-z-high, .layer-z-top {
+                transform: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Свежие атмосферные mesh-градиенты на чисто белом фоне -->
+    <div class="ambient-light-canvas" aria-hidden="true">
+        <div class="mesh-blob blob-mint"></div>
+        <div class="mesh-blob blob-sky"></div>
+        <div class="mesh-blob blob-lime"></div>
+    </div>
+
+    <!-- Деликатная плёночная зернистость -->
+    <div class="film-grain-light" aria-hidden="true"></div>
+
+    <!-- =========================================================================
+         ВЕРХНЯЯ СТЕКЛЯННАЯ ПАНЕЛЬ: БРЕНД И КНОПКИ В ПРАВОМ ВЕРХНЕМ УГЛУ
+         ========================================================================= -->
+    <header class="no-print fixed top-0 left-0 right-0 z-40 px-3 sm:px-6 py-2.5 flex items-center justify-between pointer-events-none">
+        <!-- Левый бренд-бейдж -->
+        <div class="liquid-pill px-3.5 py-1.5 flex items-center gap-2.5 pointer-events-auto">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_10px_rgba(16,185,129,0.65)]"></span>
+            <span class="font-display font-extrabold text-sm sm:text-base tracking-tight text-slate-900">UDM<span class="text-[#059669]">PAY</span></span>
+            <span class="hidden sm:inline text-[11px] font-mono-num text-slate-500 border-l border-slate-200 pl-2.5">54-ФЗ • 161-ФЗ</span>
+        </div>
+
+        <!-- Правый верхний угол: Настроить контакты + Сохранить PDF -->
+        <div class="flex items-center gap-2 pointer-events-auto">
+            <button id="btn-open-contacts" type="button" class="liquid-pill px-3.5 py-2 hover:bg-white transition flex items-center gap-1.5 text-xs font-semibold text-slate-800 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-[#059669]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <span>Настроить контакты</span>
+            </button>
+
+            <button id="btn-export-pdf" type="button" class="px-3.5 py-2 rounded-full bg-gradient-to-r from-[#059669] to-[#10B981] hover:brightness-105 text-white text-xs font-bold shadow-[0_8px_20px_rgba(16,185,129,0.32)] transition flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>Сохранить PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- =========================================================================
+         ОСНОВНАЯ СЦЕНА ПРЕЗЕНТАЦИИ (9 СЛАЙДОВ)
+         ========================================================================= -->
+    <main id="deck-viewport">
+
+        <!-- =====================================================================
+             СЛАЙД (01) — ГЛАВНЫЙ ЭКРАН: МИНИМУМ ТЕКСТА + ИНТЕРАКТИВНАЯ 3D-СЦЕНА
+             ===================================================================== -->
+        <section class="slide active" data-index="0">
+            <!-- Верхняя строка: Реестр ЦБ и регион -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="liquid-pill px-3.5 py-1 text-[11px] sm:text-xs font-semibold text-slate-700 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+                    <span>ЦБ РФ 161-ФЗ • Патент №2022685673</span>
+                </div>
+                <div class="liquid-pill px-3.5 py-1 text-[11px] sm:text-xs font-semibold text-[#059669] flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-[#10B981]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span class="js-region-text">Региональное представительство • Пермский край</span>
+                </div>
+            </div>
+
+            <!-- Двухколоночная сетка: 40% лаконичный текст слева / 60% интерактивная 3D-визуализация справа -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 my-auto items-center">
+                
+                <!-- ЛЕВАЯ КОЛОНКА (5/12 ~ 40%): Минимум текста + переключатели этапов -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="space-y-2.5">
+                        <h1 class="text-3xl sm:text-4xl lg:text-[40px] font-extrabold leading-[1.08] tracking-tight text-slate-900">
+                            Приём платежей <span class="text-gradient-fresh">без кассы и терминала</span>
+                        </h1>
+                        <p class="text-sm sm:text-base text-slate-600 font-medium">
+                            NFC, QR и ссылки по 54-ФЗ прямо со смартфона
+                        </p>
+                    </div>
+
+                    <!-- 3 компактных стеклянных бейджа -->
+                    <div class="flex flex-wrap gap-2">
+                        <div class="liquid-pill px-3.5 py-1.5 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+                            <span class="font-mono-num text-xs font-extrabold text-slate-900">0 ₽ старт</span>
+                        </div>
+                        <div class="liquid-pill px-3.5 py-1.5 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-[#0EA5E9]"></span>
+                            <span class="font-mono-num text-xs font-extrabold text-slate-900">1,65% ставка</span>
+                        </div>
+                        <div class="liquid-glass-emerald px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
+                            <span class="font-mono-num text-xs font-extrabold text-[#059669]">+112 000 ₽ с 1 млн оборота</span>
+                        </div>
+                    </div>
+
+                    <!-- Переключатели этапов 3D-визуализации -->
+                    <div class="space-y-2 pt-1">
+                        <div class="text-[11px] font-mono-num uppercase tracking-wider text-slate-400 font-bold">
+                            Интерактивная схема работы:
+                        </div>
+                        <div class="flex flex-wrap gap-1.5" id="hero-stage-controls">
+                            <button type="button" data-stage="all" class="stage-pill-btn active px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm transition cursor-pointer">
+                                Весь цикл
+                            </button>
+                            <button type="button" data-stage="pay" class="stage-pill-btn liquid-pill px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition cursor-pointer">
+                                1. Оплата
+                            </button>
+                            <button type="button" data-stage="cloud" class="stage-pill-btn liquid-pill px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition cursor-pointer">
+                                2. Облако 54-ФЗ
+                            </button>
+                            <button type="button" data-stage="result" class="stage-pill-btn liquid-pill px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition cursor-pointer">
+                                3. Чек и ТГ
+                            </button>
+                        </div>
+
+                        <!-- Короткая подсказка в 1 строку при переключении -->
+                        <div class="liquid-glass px-3.5 py-2.5 rounded-2xl flex items-center gap-2.5">
+                            <span class="w-2 h-2 rounded-full bg-[#10B981] shrink-0"></span>
+                            <p id="hero-3d-caption" class="text-xs font-semibold text-slate-800 leading-snug">
+                                Полный цикл за 3 секунды: клиент платит телефоном → чек уходит в ФНС → вам прилетает отчёт в ТГ.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ПРАВАЯ КОЛОНКА (7/12 ~ 60%): ИНТЕРАКТИВНАЯ 3D-ВИЗУАЛИЗАЦИЯ (PRESERVE-3D) -->
+                <div class="lg:col-span-7 hero-3d-viewport select-none">
+                    <div id="hero-3d-stage" class="hero-3d-stage relative w-full min-h-[370px] sm:min-h-[410px] rounded-[32px] liquid-glass p-4 sm:p-5 flex flex-col justify-between overflow-visible">
+                        
+                        <!-- Фоновая координатная сетка внутри 3D-сцены + Анимированные SVG-потоки -->
+                        <svg class="absolute inset-0 w-full h-full pointer-events-none layer-z-base" viewBox="0 0 700 420" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="beamGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#0EA5E9" stop-opacity="0.85" />
+                                    <stop offset="100%" stop-color="#10B981" stop-opacity="0.95" />
+                                </linearGradient>
+                                <linearGradient id="beamGrad2" x1="0%" y1="50%" x2="100%" y2="50%">
+                                    <stop offset="0%" stop-color="#10B981" stop-opacity="0.95" />
+                                    <stop offset="100%" stop-color="#059669" stop-opacity="0.85" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Поток 1: От смартфона покупателя к центральному 3D-модулю UDMPAY -->
+                            <path d="M 185 215 C 245 215, 260 205, 315 205" fill="none" stroke="rgba(14, 165, 233, 0.18)" stroke-width="3" />
+                            <path d="M 185 215 C 245 215, 260 205, 315 205" fill="none" stroke="url(#beamGrad1)" stroke-width="3" stroke-linecap="round" class="flow-beam" />
+
+                            <!-- Поток 2: От центрального модуля к карточке «Чек в ФНС» (верх-право) -->
+                            <path d="M 415 185 C 465 160, 475 95, 515 82" fill="none" stroke="rgba(16, 185, 129, 0.18)" stroke-width="2.5" />
+                            <path d="M 415 185 C 465 160, 475 95, 515 82" fill="none" stroke="url(#beamGrad2)" stroke-width="2.5" stroke-linecap="round" class="flow-beam" />
+
+                            <!-- Поток 3: От центрального модуля к карточке «Уведомление в TG / MAX» (центр-право) -->
+                            <path d="M 425 205 L 515 205" fill="none" stroke="rgba(14, 165, 233, 0.22)" stroke-width="2.5" />
+                            <path d="M 425 205 L 515 205" fill="none" stroke="url(#beamGrad1)" stroke-width="2.5" stroke-linecap="round" class="flow-beam" />
+
+                            <!-- Поток 4: От центрального модуля к карточке «0 ₽ вместо 66 500 ₽» (низ-право) -->
+                            <path d="M 415 225 C 465 250, 475 315, 515 330" fill="none" stroke="rgba(16, 185, 129, 0.18)" stroke-width="2.5" />
+                            <path d="M 415 225 C 465 250, 475 315, 515 330" fill="none" stroke="url(#beamGrad2)" stroke-width="2.5" stroke-linecap="round" class="flow-beam" />
+                        </svg>
+
+                        <!-- 3-колоночная композиция объёмных 3D-объектов -->
+                        <div class="relative z-10 grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-center my-auto" style="transform-style: preserve-3d;">
+                            
+                            <!-- УЗЕЛ 1 (Слева, 4/12): Объёмный 3D-смартфон покупателя -->
+                            <div data-node="pay" class="node-3d-card layer-z-mid sm:col-span-4 mx-auto w-full max-w-[185px] rounded-[28px] bg-white/95 p-2.5 border-2 border-white shadow-[0_22px_40px_-10px_rgba(14,165,233,0.24),0_0_0_1px_rgba(15,23,42,0.08)] float-3d-slow">
+                                <!-- Dynamic Island -->
+                                <div class="w-14 h-2.5 bg-slate-900 rounded-full mx-auto mb-2"></div>
+                                <div class="rounded-[20px] bg-gradient-to-b from-sky-50 to-emerald-50/70 p-2.5 border border-slate-100 text-center space-y-2">
+                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white text-[9px] font-bold text-sky-600 shadow-xs">
+                                        <span>NFC • QR • Ссылка</span>
+                                    </div>
+                                    <div class="font-mono-num text-lg font-extrabold text-slate-900">2 400 ₽</div>
+                                    <!-- Мини QR/NFC графический блок -->
+                                    <div class="w-12 h-12 mx-auto rounded-xl bg-white border border-emerald-200 shadow-xs flex items-center justify-center relative">
+                                        <span class="absolute inset-0 rounded-xl border border-emerald-400 nfc-ring"></span>
+                                        <svg class="w-6 h-6 text-[#059669]" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="text-[9px] font-semibold text-slate-600 leading-tight">
+                                        Смартфон покупателя<br><span class="text-[#059669]">Без приложений</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- УЗЕЛ 2 (Центр, 3/12): Парящий центральный 3D-модуль UDMPAY -->
+                            <div data-node="cloud" class="node-3d-card layer-z-top sm:col-span-3 mx-auto w-full max-w-[160px] rounded-[26px] bg-gradient-to-br from-[#059669] via-[#10B981] to-[#0EA5E9] p-3.5 text-white text-center border-2 border-white/90 shadow-[0_24px_46px_-8px_rgba(16,185,129,0.45)]">
+                                <div class="w-9 h-9 mx-auto mb-2 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/40">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
+                                <div class="font-display font-extrabold text-sm tracking-tight">UDMPAY</div>
+                                <div class="font-mono-num text-[10px] font-bold bg-black/20 rounded-full px-2 py-0.5 mt-1 inline-block">
+                                    1,65% • 54-ФЗ
+                                </div>
+                                <div class="text-[9px] text-emerald-50 mt-1.5 leading-tight">
+                                    Облачная касса и эквайринг 2-в-1
+                                </div>
+                            </div>
+
+                            <!-- УЗЕЛ 3 (Справа, 5/12): 3 объёмные стеклянные карточки на разной глубине Z -->
+                            <div class="sm:col-span-5 space-y-2.5" style="transform-style: preserve-3d;">
+                                
+                                <!-- Карточка 3A: Чек в ФНС и покупателю -->
+                                <div data-node="result" class="node-3d-card layer-z-high liquid-glass bg-white/90 p-3 rounded-2xl flex items-center gap-2.5">
+                                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-[#059669] flex items-center justify-center shrink-0">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="leading-tight">
+                                        <div class="text-xs font-extrabold text-slate-900">Чек в ФНС и покупателю</div>
+                                        <div class="text-[10px] text-slate-500 mt-0.5">Автофискализация по 54-ФЗ без кассы и ФН</div>
+                                    </div>
+                                </div>
+
+                                <!-- Карточка 3B: Уведомление в Telegram / MAX -->
+                                <div data-node="result" class="node-3d-card layer-z-top liquid-glass bg-white/95 p-3 rounded-2xl flex items-center gap-2.5 border-sky-200">
+                                    <div class="w-9 h-9 rounded-xl bg-sky-100 text-[#0284C7] flex items-center justify-center shrink-0 font-mono-num text-xs font-extrabold">
+                                        TG
+                                    </div>
+                                    <div class="leading-tight">
+                                        <div class="text-xs font-extrabold text-slate-900">Уведомление в Telegram / MAX</div>
+                                        <div class="text-[10px] text-slate-500 mt-0.5">Контроль продаж без доступа в банк</div>
+                                    </div>
+                                </div>
+
+                                <!-- Карточка 3C: Экономия 0 ₽ вместо 66 500 ₽ -->
+                                <div data-node="cloud" class="node-3d-card layer-z-mid liquid-glass-emerald p-3 rounded-2xl flex items-center gap-2.5">
+                                    <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 relative">
+                                        <!-- Иконка кассы/терминала с перечёркиванием -->
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <span class="absolute w-7 h-0.5 bg-rose-600 rotate-45 rounded-full"></span>
+                                    </div>
+                                    <div class="leading-tight">
+                                        <div class="text-xs font-extrabold text-slate-900">
+                                            <span class="text-[#059669]">0 ₽</span> вместо <span class="line-through text-rose-500">66 500 ₽</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-600 mt-0.5">Без покупки кассы, терминала и проводов</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- Нижняя подсказка внутри 3D-окна -->
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-200/60">
+                            <span>Наведите курсор или нажмите на любой блок схемы</span>
+                            <span class="font-mono-num text-[#059669] font-bold">3D Interactive</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Нижняя строка: Номер слайда (01) + компактные регалии -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                <div class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(01)</div>
+                <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-slate-600">
+                    <span class="liquid-pill px-2.5 py-1">★ 1 место FinAward 2025</span>
+                    <span class="liquid-pill px-2.5 py-1">★ Победитель Сколково</span>
+                    <span class="liquid-pill px-2.5 py-1">★ Банковская группа Синара</span>
+                    <span class="liquid-pill px-2.5 py-1">★ Премия БРИКС (Дубай)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (02) — ПРОБЛЕМА РЫНКА VS РЕШЕНИЕ UDMPAY «ВСЁ ВКЛЮЧЕНО»
+             ===================================================================== -->
+        <section class="slide" data-index="1">
+            <div>
+                <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                    <span>Сравнение подходов • All Inclusive</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl lg:text-[36px] font-extrabold leading-tight text-slate-900">
+                    Зачем покупать оборудование и софт, если в UDMPAY <span class="text-gradient-fresh">всё уже включено</span>?
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 my-auto">
+                <!-- Левая карточка: Проблема рынка -->
+                <div class="liquid-glass-rose p-5 sm:p-6 flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <span class="px-3 py-1 rounded-full bg-rose-100 text-xs font-bold text-rose-700">Обычный приём платежей</span>
+                            <span class="font-mono-num text-xs font-bold text-rose-600">Запуск 1–30 дней</span>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-3">Расходы и головная боль бизнеса</h3>
+
+                        <ul class="space-y-2.5 text-xs sm:text-sm text-slate-700">
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-rose-500 font-bold mt-0.5">✕</span>
+                                <span>Покупка или аренда на каждую точку/курьера: <strong>терминал, касса, роутер, ПК, SIM-карта</strong> (12 000 – 35 000 ₽).</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-rose-500 font-bold mt-0.5">✕</span>
+                                <span>Покупка <strong>фискального накопителя (от 12 000 ₽)</strong>, выпуск ЭЦП, регистрация в ФНС и договор с ОФД.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-rose-500 font-bold mt-0.5">✕</span>
+                                <span>Ежемесячная плата за <strong>программу учёта</strong> и вызов <strong>технического специалиста</strong> для настройки.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-rose-500 font-bold mt-0.5">✕</span>
+                                <span>Высокая комиссия эквайринга (в среднем <strong>2,5%</strong>) и необходимость давать продавцам <strong>доступ в банк</strong>.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="rounded-2xl bg-rose-500/10 border border-rose-200 p-3.5 flex items-center justify-between">
+                        <span class="text-xs sm:text-sm font-bold text-rose-900">Расходы на старт:</span>
+                        <span class="font-mono-num text-xl sm:text-2xl font-extrabold text-rose-600 line-through">от 66 500 ₽</span>
+                    </div>
+                </div>
+
+                <!-- Правая карточка: Решение UDMPAY -->
+                <div class="liquid-glass-emerald p-5 sm:p-6 flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <span class="px-3 py-1 rounded-full bg-[#10B981] text-xs font-bold text-white">UDMPAY «Всё включено»</span>
+                            <span class="font-mono-num text-xs font-bold text-[#059669]">Запуск за 1 час</span>
+                        </div>
+                        <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-3">Бизнес становится легче с первого часа</h3>
+
+                        <ul class="space-y-2.5 text-xs sm:text-sm text-slate-800">
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                                <span><strong>Подключение — 0 ₽, абонентская плата — 0 ₽.</strong> Без покупки терминалов, касс, ФН и SIM-карт.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                                <span><strong>Единая ставка 1,65% «Всё включено»</strong> — онлайн-касса по 54-ФЗ, ОФД, CRM и интернет-магазин уже внутри.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                                <span><strong>Оплата прикосновением (NFC)</strong> вместо Apple Pay и Google Pay, а также по QR-кодам и ссылкам.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                                <span><strong>Никаких программистов и доступа в банк:</strong> продавцы работают со своих телефонов и видят оплаты в ТГ.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="rounded-2xl bg-[#10B981]/15 border border-[#10B981]/35 p-3.5 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-extrabold text-slate-900">Расходы на старт: <span class="font-mono-num text-[#059669] text-lg">0 ₽</span></div>
+                            <div class="text-[11px] text-slate-600">Прямая экономия на запуске</div>
+                        </div>
+                        <span class="font-mono-num text-xl sm:text-2xl font-extrabold text-[#059669]">+66 500 ₽</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(02)</span>
+                <span class="text-xs text-slate-500">Патент №2022685673 от 27.12.2022</span>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (03) — МАТЕМАТИКА ВЫГОДЫ (СТАРТ + ЕЖЕМЕСЯЧНО В 4 РАЗА ДЕШЕВЛЕ)
+             ===================================================================== -->
+        <section class="slide" data-index="2">
+            <div>
+                <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                    <span>Честная математика • Сравнение затрат</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl lg:text-[36px] font-extrabold leading-tight text-slate-900">
+                    Экономия <span class="text-gradient-fresh">66 500 ₽ на старте</span> и в 4 раза выгоднее ежемесячное обслуживание
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 my-auto items-stretch">
+                <!-- Левая таблица: Запуск и ежемесячные расходы (7/12) -->
+                <div class="lg:col-span-7 liquid-glass p-5 sm:p-6 flex flex-col justify-between">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
+                                <th class="pb-2.5 font-bold">Статья затрат</th>
+                                <th class="pb-2.5 font-extrabold text-[#059669]">UDMPAY</th>
+                                <th class="pb-2.5 font-bold text-slate-500">Рынок</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200/70 text-xs sm:text-sm">
+                            <tr>
+                                <td class="py-2 text-slate-700">Кассовый аппарат + Фискальный накопитель</td>
+                                <td class="py-2 font-mono-num font-bold text-[#059669]">0 ₽ (интегрировано)</td>
+                                <td class="py-2 font-mono-num text-slate-600">от 17 000 ₽</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 text-slate-700">Интернет-магазин, CRM и подключение</td>
+                                <td class="py-2 font-mono-num font-bold text-[#059669]">0 ₽ (интегрировано)</td>
+                                <td class="py-2 font-mono-num text-slate-600">от 49 500 ₽</td>
+                            </tr>
+                            <tr class="bg-emerald-50/90">
+                                <td class="py-2.5 px-2 font-extrabold text-slate-900 rounded-l-xl">ИТОГО НА ЗАПУСК БИЗНЕСА</td>
+                                <td class="py-2.5 font-mono-num font-extrabold text-[#059669] text-base">0 ₽</td>
+                                <td class="py-2.5 px-2 font-mono-num font-bold text-rose-600 line-through rounded-r-xl">66 500 ₽</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 text-slate-700">Аренда кассы, ПО учёта и CRM в месяц</td>
+                                <td class="py-2 font-mono-num font-bold text-[#059669]">0 ₽ / мес</td>
+                                <td class="py-2 font-mono-num text-slate-600">14 480 ₽ / мес</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 text-slate-700">Комиссия (при обороте 300 000 ₽/мес)</td>
+                                <td class="py-2 font-mono-num font-bold text-[#059669]">1,65% — 4 950 ₽</td>
+                                <td class="py-2 font-mono-num text-slate-600">2,5% — 7 500 ₽</td>
+                            </tr>
+                            <tr class="bg-sky-50/90">
+                                <td class="py-2.5 px-2 font-extrabold text-slate-900 rounded-l-xl">ОБСЛУЖИВАНИЕ В МЕСЯЦ</td>
+                                <td class="py-2.5 font-mono-num font-extrabold text-[#059669] text-base">4 950 ₽</td>
+                                <td class="py-2.5 px-2 font-mono-num font-extrabold text-rose-600 text-base rounded-r-xl">21 980 ₽</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Правая карточка: Наглядная визуализация разницы (5/12) -->
+                <div class="lg:col-span-5 liquid-glass-emerald p-5 sm:p-6 flex flex-col justify-between gap-4">
+                    <div class="text-xs font-mono-num uppercase tracking-wider text-[#059669] font-extrabold">
+                        Ежемесячный чек за приём платежей
+                    </div>
+
+                    <div class="space-y-4 my-auto">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1.5">
+                                <span class="text-slate-700">Классический рынок (2,5% + аренда/ПО)</span>
+                                <span class="font-mono-num text-rose-600">21 980 ₽ / мес</span>
+                            </div>
+                            <div class="w-full h-7 rounded-full bg-white/80 p-1 border border-slate-200">
+                                <div class="h-full w-full rounded-full bg-gradient-to-r from-rose-500 to-amber-500"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1.5">
+                                <span class="text-[#059669]">UDMPAY «Всё включено» (1,65%)</span>
+                                <span class="font-mono-num text-[#059669]">4 950 ₽ / мес</span>
+                            </div>
+                            <div class="w-full h-7 rounded-full bg-white/80 p-1 border border-emerald-200">
+                                <div class="h-full w-[22.5%] rounded-full bg-gradient-to-r from-[#059669] to-[#10B981] shadow-[0_2px_10px_rgba(16,185,129,0.45)]"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-white/85 border border-emerald-200 p-4 shadow-xs">
+                        <div class="text-xs text-slate-600">Ваша прямая экономия уже при обороте 300 тыс. ₽/мес:</div>
+                        <div class="font-mono-num text-2xl font-extrabold text-slate-900 mt-1">+17 030 ₽ / мес</div>
+                        <div class="text-xs text-[#059669] font-bold mt-0.5">+270 860 ₽ сохраняется в первый год (с учётом старта)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(03)</span>
+                <button type="button" data-goto="3" class="text-xs font-bold text-[#059669] hover:underline cursor-pointer">
+                    Рассчитать выгоду на вашем обороте →
+                </button>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (04) — ИНТЕРАКТИВНЫЙ КАЛЬКУЛЯТОР ЭКОНОМИИ
+             ===================================================================== -->
+        <section class="slide" data-index="3">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                <div>
+                    <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                        <span>Интерактивный расчёт • Двигайте ползунок</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl lg:text-[34px] font-extrabold leading-tight text-slate-900">
+                        Калькулятор вашей выгоды с UDMPAY
+                    </h2>
+                </div>
+
+                <!-- Переключатель режима: Новый бизнес / Смена текущей кассы -->
+                <div class="liquid-pill p-1 inline-flex items-center gap-1 self-start">
+                    <button id="calc-mode-new" type="button" class="px-3.5 py-1.5 rounded-full bg-[#059669] text-white text-xs font-extrabold transition cursor-pointer">
+                        Новый бизнес
+                    </button>
+                    <button id="calc-mode-switch" type="button" class="px-3.5 py-1.5 rounded-full text-slate-600 hover:text-slate-900 text-xs font-bold transition cursor-pointer">
+                        Смена текущей кассы
+                    </button>
+                </div>
+            </div>
+
+            <!-- Панель ползунка оборота -->
+            <div class="liquid-glass p-5 sm:p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label for="calc-turnover-range" class="text-sm sm:text-base font-bold text-slate-800">
+                        Месячный оборот по безналичным платежам:
+                    </label>
+                    <div id="calc-turnover-value" class="font-mono-num text-2xl sm:text-3xl font-extrabold text-[#059669]">
+                        1 000 000 ₽
+                    </div>
+                </div>
+
+                <input id="calc-turnover-range" type="range" min="100000" max="10000000" step="50000" value="1000000" class="glass-slider-light">
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div class="flex justify-between w-full sm:w-auto gap-4 text-[11px] font-mono-num text-slate-500">
+                        <span>100 000 ₽</span>
+                        <span>5 000 000 ₽</span>
+                        <span>10 000 000 ₽</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" class="calc-preset liquid-pill px-2.5 py-1 text-[11px] font-mono-num font-semibold text-slate-700 hover:bg-white cursor-pointer" data-val="300000">300 тыс. ₽</button>
+                        <button type="button" class="calc-preset liquid-pill px-2.5 py-1 text-[11px] font-mono-num font-semibold text-slate-700 hover:bg-white cursor-pointer" data-val="1000000">1 млн ₽</button>
+                        <button type="button" class="calc-preset liquid-pill px-2.5 py-1 text-[11px] font-mono-num font-semibold text-slate-700 hover:bg-white cursor-pointer" data-val="3000000">3 млн ₽</button>
+                        <button type="button" class="calc-preset liquid-pill px-2.5 py-1 text-[11px] font-mono-num font-semibold text-slate-700 hover:bg-white cursor-pointer" data-val="5000000">5 млн ₽</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 карточки результатов пересчёта -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-auto">
+                <div class="liquid-glass p-4 sm:p-5 flex flex-col justify-between">
+                    <div class="text-xs text-slate-500 font-semibold">1. Экономия на старте</div>
+                    <div id="calc-res-startup" class="font-mono-num text-2xl sm:text-[26px] font-extrabold text-slate-900 my-2">66 500 ₽</div>
+                    <div id="calc-res-startup-sub" class="text-[11px] text-[#059669] font-semibold">Касса, ФН, CRM и подключение = 0 ₽</div>
+                </div>
+
+                <div class="liquid-glass p-4 sm:p-5 flex flex-col justify-between">
+                    <div class="text-xs text-slate-500 font-semibold">2. Экономия в месяц</div>
+                    <div id="calc-res-monthly" class="font-mono-num text-2xl sm:text-[26px] font-extrabold text-[#059669] my-2">+22 980 ₽</div>
+                    <div class="text-[11px] text-slate-500">1,65% без абонентки против 2,5% + обслуга</div>
+                </div>
+
+                <div class="liquid-glass-emerald p-4 sm:p-5 flex flex-col justify-between">
+                    <div class="text-xs text-slate-800 font-bold">3. Годовая чистая выгода</div>
+                    <div id="calc-res-yearly" class="font-mono-num text-2xl sm:text-[28px] font-extrabold text-[#059669] my-2">+342 260 ₽</div>
+                    <div class="text-[11px] text-slate-700 font-semibold">Остаётся на счёте компании за 12 мес.</div>
+                </div>
+
+                <div class="liquid-glass p-4 sm:p-5 flex flex-col justify-between border-sky-200">
+                    <div class="text-xs text-sky-700 font-bold">4. Дополнительная прибыль</div>
+                    <div id="calc-res-profit" class="font-mono-num text-2xl sm:text-[26px] font-extrabold text-[#0284C7] my-2">+112 000 ₽/мес</div>
+                    <div class="text-[11px] text-slate-500">112 тыс. ₽ с каждого 1 млн ₽ оборота*</div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(04)</span>
+                <span class="text-[11px] text-slate-500">*Расчёт справочный, не является публичной офертой</span>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (05) — ЖИВОЙ СИМУЛЯТОР ОПЛАТЫ БЕЗ ПРИЛОЖЕНИЙ
+             ===================================================================== -->
+        <section class="slide" data-index="4">
+            <div>
+                <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                    <span>Живая демонстрация • Без установки приложений</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl lg:text-[34px] font-extrabold leading-tight text-slate-900">
+                    Проведите тестовую оплату за 3 секунды прямо на экране
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 my-auto items-center">
+                <!-- Левая колонка: Выбор способа оплаты и кнопка запуска (7/12) -->
+                <div class="lg:col-span-7 liquid-glass p-5 sm:p-6 space-y-5">
+                    <div class="space-y-2">
+                        <div class="text-xs font-mono-num uppercase tracking-wider text-slate-500 font-bold">Шаг 1. Выберите способ оплаты</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <button type="button" class="sim-mode-btn active px-3.5 py-3 rounded-2xl bg-emerald-50 border-2 border-[#10B981] text-left transition cursor-pointer" data-sim-mode="nfc">
+                                <div class="text-xs font-extrabold text-slate-900">NFC прикосновением</div>
+                                <div class="text-[11px] text-[#059669] font-medium mt-0.5">Вместо Apple / Google Pay</div>
+                            </button>
+                            <button type="button" class="sim-mode-btn px-3.5 py-3 rounded-2xl bg-white/75 border border-slate-200 hover:bg-white text-left transition cursor-pointer" data-sim-mode="qr">
+                                <div class="text-xs font-extrabold text-slate-900">QR-код на точке</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Любое банковское приложение</div>
+                            </button>
+                            <button type="button" class="sim-mode-btn px-3.5 py-3 rounded-2xl bg-white/75 border border-slate-200 hover:bg-white text-left transition cursor-pointer" data-sim-mode="link">
+                                <div class="text-xs font-extrabold text-slate-900">Ссылка в мессенджер</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Telegram / WhatsApp / MAX</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-white/80 border border-slate-200/80 p-4 space-y-2.5 text-xs sm:text-sm text-slate-700">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-emerald-100 text-[#059669] font-mono-num text-xs font-extrabold flex items-center justify-center">1</span>
+                            <span>Покупатель подтверждает покупку <strong class="text-slate-900">без установки приложений</strong>.</span>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-emerald-100 text-[#059669] font-mono-num text-xs font-extrabold flex items-center justify-center">2</span>
+                            <span>Кассовый чек по <strong class="text-slate-900">54-ФЗ</strong> автоматически уходит в ФНС и на экран покупателя.</span>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-emerald-100 text-[#059669] font-mono-num text-xs font-extrabold flex items-center justify-center">3</span>
+                            <span>Продавцу прилетает мгновенное уведомление в <strong class="text-slate-900">Telegram или MAX</strong>.</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <button id="btn-run-sim" type="button" class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#059669] to-[#10B981] hover:brightness-105 text-white font-extrabold text-sm shadow-[0_10px_26px_rgba(16,185,129,0.35)] transition flex items-center gap-2 cursor-pointer">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path>
+                            </svg>
+                            <span id="btn-run-sim-label">Провести оплату 2 400 ₽</span>
+                        </button>
+                        <span id="sim-status-hint" class="text-xs text-slate-500">Нажмите кнопку для демонстрации</span>
+                    </div>
+                </div>
+
+                <!-- Правая колонка: Светлый макет смартфона iOS 26 (5/12) -->
+                <div class="lg:col-span-5 flex justify-center">
+                    <div class="w-[290px] sm:w-[305px] rounded-[40px] p-3 bg-white border-2 border-slate-200 shadow-[0_28px_60px_rgba(15,23,42,0.14),0_0_0_4px_rgba(255,255,255,0.85)] relative overflow-hidden">
+                        <!-- Dynamic Island -->
+                        <div class="w-24 h-4 bg-slate-900 rounded-full mx-auto mb-2.5 flex items-center justify-end px-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        </div>
+
+                        <!-- Push-уведомление Telegram / MAX -->
+                        <div id="sim-tg-toast" class="mb-2.5 rounded-2xl bg-slate-900 text-white p-2.5 shadow-xl transition-all duration-500 opacity-0 -translate-y-3 pointer-events-none">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-full bg-sky-500/25 border border-sky-400/50 text-sky-300 font-bold text-xs flex items-center justify-center shrink-0">
+                                    TG
+                                </div>
+                                <div class="leading-tight">
+                                    <div class="text-[11px] font-extrabold text-[#34D399]">UDMPAY • Оплата +2 400 ₽</div>
+                                    <div class="text-[10px] text-slate-300">Продавец #2 • Чек отправлен в ФНС</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Экран retail.udmpay.ru -->
+                        <div class="rounded-[28px] bg-gradient-to-b from-slate-50 to-emerald-50/50 border border-slate-200/80 p-4 min-h-[295px] flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-[10px] font-mono-num text-slate-500 border-b border-slate-200 pb-2">
+                                <span class="text-[#059669] font-extrabold">UDMPAY</span>
+                                <span>retail.udmpay.ru</span>
+                            </div>
+
+                            <!-- Состояние 1: Ожидание оплаты -->
+                            <div id="sim-screen-ready" class="my-auto py-3 text-center space-y-3">
+                                <div id="sim-mode-badge" class="inline-block px-2.5 py-1 rounded-full bg-emerald-100 text-[#059669] text-[10px] font-bold">
+                                    NFC прикосновением
+                                </div>
+                                <div class="font-mono-num text-2xl font-extrabold text-slate-900">2 400,00 ₽</div>
+
+                                <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+                                    <div class="absolute inset-0 rounded-full border-2 border-emerald-400/60 nfc-ring"></div>
+                                    <div id="sim-icon-box" class="w-14 h-14 rounded-2xl bg-white border border-emerald-200 shadow-sm flex items-center justify-center text-[#059669] font-mono-num text-xs font-extrabold">
+                                        NFC
+                                    </div>
+                                </div>
+                                <div id="sim-prompt-text" class="text-[11px] text-slate-600 font-medium">
+                                    Прикоснитесь смартфоном к модулю UDMPAY
+                                </div>
+                            </div>
+
+                            <!-- Состояние 2: Подтверждение -->
+                            <div id="sim-screen-processing" class="hidden my-auto py-6 text-center space-y-3">
+                                <div class="w-12 h-12 rounded-full border-3 border-[#10B981] border-t-transparent animate-spin mx-auto"></div>
+                                <div class="text-xs font-bold text-slate-900">Подтверждение в банке...</div>
+                                <div class="text-[11px] text-slate-500">Фискализация чека по 54-ФЗ</div>
+                            </div>
+
+                            <!-- Состояние 3: Успех и чек по 54-ФЗ -->
+                            <div id="sim-screen-receipt" class="hidden my-auto space-y-2.5">
+                                <div class="text-center text-xs font-extrabold text-[#059669]">
+                                    ✓ Оплата прошла успешно!
+                                </div>
+                                <div class="bg-white text-slate-900 rounded-2xl p-3 text-left border border-slate-200 shadow-sm space-y-1">
+                                    <div class="text-center font-extrabold text-[10px] text-[#059669] leading-tight">
+                                        ООО «ЭКСПОРТНЫЙ ТОРГОВЫЙ ДОМ»
+                                    </div>
+                                    <div class="flex justify-between text-[9px] font-mono-num text-slate-500 pt-1 border-t border-dashed border-slate-200">
+                                        <span>КАССОВЫЙ ЧЕК № 45</span>
+                                        <span>СМЕНА 341</span>
+                                    </div>
+                                    <div class="flex justify-between text-[11px] font-mono-num font-extrabold text-slate-900 pt-0.5">
+                                        <span>ИТОГО:</span>
+                                        <span>2 400,00 ₽</span>
+                                    </div>
+                                    <div class="text-[8px] text-slate-500 pt-1 border-t border-slate-100 leading-tight">
+                                        54-ФЗ • Чек уже в налоговой инспекции и на смартфоне покупателя
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center text-[10px] text-slate-400 pt-1 border-t border-slate-200/70">
+                                Без установки приложений
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(05)</span>
+                <span class="text-xs text-slate-500">Подтверждение любым банковским приложением РФ</span>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (06) — СКОРОСТЬ, КОНТРОЛЬ ПЕРСОНАЛА И САМООБСЛУЖИВАНИЕ
+             ===================================================================== -->
+        <section class="slide" data-index="5">
+            <div>
+                <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                    <span>Безопасность владельца и рост выручки</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl lg:text-[34px] font-extrabold leading-tight text-slate-900">
+                    Контроль продаж без доступа в банк и <span class="text-gradient-fresh">магазин самообслуживания</span>
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 my-auto">
+                <!-- Левая колонка: Кабинеты продавцов и уведомления -->
+                <div class="liquid-glass p-5 sm:p-6 flex flex-col justify-between space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-sky-100 text-[#0284C7] flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg sm:text-xl font-extrabold text-slate-900">Кабинет продавца на любом устройстве</h3>
+                            <div class="text-xs text-[#0284C7] font-bold">iPhone • Android • ПК • Mac</div>
+                        </div>
+                    </div>
+
+                    <ul class="space-y-3 text-xs sm:text-sm text-slate-700">
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                            <span><strong>Без доступа в банк организации:</strong> сотрудники принимают оплату, но не видят ваш расчётный счёт и остаток денег.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                            <span><strong>Уведомления в Telegram или MAX:</strong> мгновенный отчёт о каждой успешной оплате лично продавцу или в общую группу.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                            <span><strong>Работает всегда и быстро:</strong> даже если зависает или пропадает стабильный интернет на точке.</span>
+                        </li>
+                    </ul>
+
+                    <div class="rounded-2xl bg-sky-50 border border-sky-200 p-3.5 text-xs text-slate-700">
+                        Электронный чек <strong>не нужно печатать</strong> — он уже в ФНС и на смартфоне покупателя (экономия на ленте и СМС).
+                    </div>
+                </div>
+
+                <!-- Правая колонка: Магазин самообслуживания -->
+                <div class="liquid-glass-emerald p-5 sm:p-6 flex flex-col justify-between space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-[#10B981] text-white flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg sm:text-xl font-extrabold text-slate-900">Магазин самообслуживания</h3>
+                            <div class="text-xs text-[#059669] font-bold">Больше продаж + меньше ФОТ</div>
+                        </div>
+                    </div>
+
+                    <ul class="space-y-3 text-xs sm:text-sm text-slate-800">
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                            <span><strong>Мечта любого покупателя — не стоять в очереди:</strong> клиент сам сканирует QR на товаре или витрине и оплачивает в 2 касания.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                            <span><strong>Без регистрации и установки приложений:</strong> максимальная конверсия в покупку без барьеров.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <span class="text-[#059669] font-extrabold mt-0.5">✓</span>
+                            <span><strong>Отдельный QR-код на каждый товар или продавца бесплатно:</strong> вместо одного дорогого терминала на всех.</span>
+                        </li>
+                    </ul>
+
+                    <div class="rounded-2xl bg-white/85 border border-emerald-200 p-3.5 flex items-center justify-between text-xs font-bold text-slate-900">
+                        <span>Скорость обслуживания выше</span>
+                        <span class="text-[#059669]">Выручка ↑ • Расходы на ФОТ ↓</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(06)</span>
+                <span class="text-xs text-slate-500">Закон от 22.05.2003 № 54-ФЗ</span>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (07) — 4 СЦЕНАРИЯ ОПЛАТЫ И РЕАЛЬНЫЕ КЕЙСЫ
+             ===================================================================== -->
+        <section class="slide" data-index="6">
+            <div>
+                <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                    <span>Удобные сценарии и практика внедрения</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl lg:text-[34px] font-extrabold leading-tight text-slate-900">
+                    4 сценария приёма платежей и реальные кейсы бизнеса
+                </h2>
+            </div>
+
+            <div class="space-y-4 my-auto">
+                <!-- Верхний ряд: 4 сценария оплаты -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    <div class="liquid-glass p-4 flex flex-col justify-between">
+                        <div class="font-mono-num text-xs font-extrabold text-[#059669] mb-1.5">01 • Свободная сумма</div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-extrabold text-slate-900 mb-1">Покупатель вводит сумму</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">Клиент сканирует QR, сам указывает сумму оплаты или чаевых и подтверждает платёж.</p>
+                        </div>
+                    </div>
+
+                    <div class="liquid-glass p-4 flex flex-col justify-between">
+                        <div class="font-mono-num text-xs font-extrabold text-[#059669] mb-1.5">02 • Прайс / Витрина</div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-extrabold text-slate-900 mb-1">Фиксированная сумма</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">Заранее заданная цена для одинаковых товаров, букетов, абонементов или услуг.</p>
+                        </div>
+                    </div>
+
+                    <div class="liquid-glass p-4 flex flex-col justify-between">
+                        <div class="font-mono-num text-xs font-extrabold text-[#059669] mb-1.5">03 • Кабинет сотрудника</div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-extrabold text-slate-900 mb-1">Продавец вводит сумму</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">Менеджер, официант или курьер формирует счёт за 2 секунды и отправляет ссылку или QR.</p>
+                        </div>
+                    </div>
+
+                    <div class="liquid-glass p-4 flex flex-col justify-between">
+                        <div class="font-mono-num text-xs font-extrabold text-[#059669] mb-1.5">04 • Автоматизация</div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-extrabold text-slate-900 mb-1">Интеграция по API</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">Бесшовная связка с вашими учётными системами, CRM и сайтом с автофискализацией.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Нижний ряд: 3 отраслевых кейса из презентации UDMPAY -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="liquid-glass-emerald p-4 sm:p-5 flex items-start gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-white text-[#059669] flex items-center justify-center shrink-0 shadow-xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-[11px] font-mono-num uppercase font-bold text-[#059669]">Кейс 1 • Фитнес-центр</div>
+                            <h4 class="text-base font-extrabold text-slate-900 mt-0.5">Оплата без очередей на ресепшене</h4>
+                            <p class="text-xs text-slate-700 mt-1 leading-relaxed">Клиенты оплачивают абонементы и тренировки в одно касание; чеки автоматически уходят в ФНС.</p>
+                        </div>
+                    </div>
+
+                    <div class="liquid-glass-emerald p-4 sm:p-5 flex items-start gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-white text-[#059669] flex items-center justify-center shrink-0 shadow-xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-[11px] font-mono-num uppercase font-bold text-[#059669]">Кейс 2 • Салон красоты</div>
+                            <h4 class="text-base font-extrabold text-slate-900 mt-0.5">Свой QR у каждого мастера</h4>
+                            <p class="text-xs text-slate-700 mt-1 leading-relaxed">Легальный приём оплат по 54-ФЗ без покупки касс и рисков переводов на личные карты.</p>
+                        </div>
+                    </div>
+
+                    <div class="liquid-glass-emerald p-4 sm:p-5 flex items-start gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-white text-[#059669] flex items-center justify-center shrink-0 shadow-xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="text-[11px] font-mono-num uppercase font-bold text-[#059669]">Кейс 3 • Автомойка</div>
+                            <h4 class="text-base font-extrabold text-slate-900 mt-0.5">Оплата прямо в боксе</h4>
+                            <p class="text-xs text-slate-700 mt-1 leading-relaxed">Не страшны влага, грязь и слабый сигнал в боксах — мгновенный расчёт со смартфона клиента.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(07)</span>
+                <span class="text-xs text-slate-500">Удобство и скорость обслуживания = рост повторных продаж</span>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (08) — НАДЁЖНОСТЬ, ЦБ РФ, 11 ПАТЕНТОВ И НАГРАДЫ
+             ===================================================================== -->
+        <section class="slide" data-index="7">
+            <div>
+                <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                    <span>Госрегулирование • Интеллектуальная собственность • Признание</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl lg:text-[34px] font-extrabold leading-tight text-slate-900">
+                    Защищённая технология, признанная ЦБ РФ и банковским рынком
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-auto">
+                <!-- 1. ЦБ РФ -->
+                <div class="liquid-glass-emerald p-5 flex flex-col justify-between">
+                    <div class="font-mono-num text-[11px] uppercase tracking-wider text-[#059669] font-extrabold mb-1.5">Реестр Банка России</div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">Зарегистрированный БПА/ПА</h3>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">Официальная регистрация в ЦБ РФ согласно федеральному закону 161-ФЗ.</p>
+                    </div>
+                </div>
+
+                <!-- 2. 11 патентов -->
+                <div class="liquid-glass-emerald p-5 flex flex-col justify-between">
+                    <div class="font-mono-num text-[11px] uppercase tracking-wider text-[#059669] font-extrabold mb-1.5">Патент №2022685673</div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">11 патентов в работе</h3>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">Защита платёжного модуля, метода, процессинга, динамического терминала и языковой модели.</p>
+                    </div>
+                </div>
+
+                <!-- 3. Синара и БРИКС+ -->
+                <div class="liquid-glass-emerald p-5 flex flex-col justify-between">
+                    <div class="font-mono-num text-[11px] uppercase tracking-wider text-[#059669] font-extrabold mb-1.5">Банковское партнёрство</div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">Группа Синара и БРИКС+</h3>
+                        <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">Совместный запуск платёжных решений для малого бизнеса и интеграция с системами БРИКС+.</p>
+                    </div>
+                </div>
+
+                <!-- 4. FinAward 2025 -->
+                <div class="liquid-glass p-5 flex flex-col justify-between">
+                    <div class="font-mono-num text-[11px] uppercase tracking-wider text-[#0284C7] font-extrabold mb-1.5">Банковская премия</div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">1-е место FinAward 2025</h3>
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Лучший проект из 500 номинантов по оценке экспертной комиссии из более чем 100 банкиров.</p>
+                    </div>
+                </div>
+
+                <!-- 5. The Trends Awards -->
+                <div class="liquid-glass p-5 flex flex-col justify-between">
+                    <div class="font-mono-num text-[11px] uppercase tracking-wider text-[#0284C7] font-extrabold mb-1.5">Fintech & Tech СНГ</div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">1-е место The Trends Awards</h3>
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Победа на крупнейшем мероприятии в СНГ по технологиям и инвестициям на 15 000 участников.</p>
+                    </div>
+                </div>
+
+                <!-- 6. Сколково, Газпромбанк, Дубай, Россия 24 -->
+                <div class="liquid-glass p-5 flex flex-col justify-between">
+                    <div class="font-mono-num text-[11px] uppercase tracking-wider text-[#0284C7] font-extrabold mb-1.5">Федеральный уровень</div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">Сколково, ГПБ и Дубай</h3>
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Победитель Стартап-тура Сколково, 1-е место в акселераторе Газпромбанка (из 312), награда в Дубае (БРИКС) и сюжет «Россия 24» на Финополисе ЦБ РФ.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(08)</span>
+                <span class="text-xs text-slate-500">Участник Финополиса ЦБ РФ и Финтех Хаба Фонда Сколково</span>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             СЛАЙД (09) — ЗАПУСК ЗА 3 ДЕЙСТВИЯ И КОНТАКТЫ ПРЕДСТАВИТЕЛЯ
+             ===================================================================== -->
+        <section class="slide" data-index="8">
+            <div>
+                <div class="inline-flex items-center gap-2 liquid-pill px-3.5 py-1 text-xs font-bold text-[#059669] mb-2">
+                    <span>Быстрый запуск • Подключение 0 ₽</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl lg:text-[36px] font-extrabold leading-tight text-slate-900">
+                    Лёгкий процесс подключения всего в 3 действия
+                </h2>
+            </div>
+
+            <!-- 3 шага подключения -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 my-auto">
+                <div class="liquid-glass p-5 relative overflow-hidden">
+                    <div class="font-mono-num text-5xl font-extrabold text-slate-900/[0.06] absolute right-4 top-3">01</div>
+                    <div class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-[#059669] font-mono-num text-xs font-extrabold mb-3">Действие 1</div>
+                    <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5">Подайте заявку</h3>
+                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Оставьте заявку на сайте <span class="js-website-text font-bold text-slate-900">udmpay.ru</span> или свяжитесь с региональным представителем.</p>
+                </div>
+
+                <div class="liquid-glass p-5 relative overflow-hidden">
+                    <div class="font-mono-num text-5xl font-extrabold text-slate-900/[0.06] absolute right-4 top-3">02</div>
+                    <div class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-[#059669] font-mono-num text-xs font-extrabold mb-3">Действие 2</div>
+                    <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5">Подпишите 1 договор</h3>
+                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">Дистанционное оформление без покупки ФН, выпуска ЭЦП, SIM-карт и регистрации кассы в налоговой.</p>
+                </div>
+
+                <div class="liquid-glass-emerald p-5 relative overflow-hidden">
+                    <div class="font-mono-num text-5xl font-extrabold text-[#059669]/15 absolute right-4 top-3">03</div>
+                    <div class="inline-block px-3 py-1 rounded-full bg-[#059669] text-white font-mono-num text-xs font-extrabold mb-3">Действие 3 • 1 час</div>
+                    <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5">Получите платёжный модуль</h3>
+                    <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">Начните принимать платежи сразу без мучительных настроек и помощи знакомого программиста.</p>
+                </div>
+            </div>
+
+            <!-- Карточка контактов регионального представителя -->
+            <div class="liquid-glass p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div class="space-y-3">
+                    <div class="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#059669]">
+                        <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+                        <span class="js-region-text">Региональное представительство • Пермский край</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-4 sm:gap-6 text-xs sm:text-sm">
+                        <div>
+                            <div class="text-[11px] text-slate-500">Сайт</div>
+                            <div class="font-mono-num font-extrabold text-slate-900 js-website-text">udmpay.ru</div>
+                        </div>
+                        <div class="sm:border-l sm:border-slate-200 sm:pl-6">
+                            <div class="text-[11px] text-slate-500">Телефон</div>
+                            <a id="cta-phone-href" href="tel:+79991235577" class="font-mono-num font-extrabold text-slate-900 hover:text-[#059669] transition js-phone-text">+7 (999) 123-55-77</a>
+                        </div>
+                        <div class="sm:border-l sm:border-slate-200 sm:pl-6">
+                            <div class="text-[11px] text-slate-500">Telegram</div>
+                            <div class="font-mono-num font-extrabold text-[#059669] js-telegram-text">@udmpay_perm</div>
+                        </div>
+                        <div class="sm:border-l sm:border-slate-200 sm:pl-6">
+                            <div class="text-[11px] text-slate-500">Почта</div>
+                            <div class="font-mono-num font-extrabold text-slate-900 js-email-text">perm@udmpay.ru</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                    <button id="btn-open-lead" type="button" class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#059669] to-[#10B981] hover:brightness-105 text-white font-extrabold text-sm shadow-[0_10px_26px_rgba(16,185,129,0.35)] transition cursor-pointer">
+                        Подключить за 0 ₽
+                    </button>
+                    <button id="btn-copy-all" type="button" class="liquid-pill px-4 py-3.5 hover:bg-white text-xs font-bold text-slate-800 transition cursor-pointer">
+                        Скопировать контакты
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <span class="font-mono-num text-xs sm:text-sm font-bold text-slate-400 tracking-widest">(09)</span>
+                <span class="text-[11px] text-slate-500">UDMPAY • Приём платежей по QR и NFC по 54-ФЗ</span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- =========================================================================
+         ПЛАВАЮЩИЙ СТЕКЛЯННЫЙ ДОК-БАР НАВИГАЦИИ (LIGHT LIQUID PILL DOCK)
+         ========================================================================= -->
+    <nav class="no-print fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-md">
+        <div class="liquid-pill px-2.5 py-2 flex items-center justify-between gap-2">
+            <!-- Кнопка Назад -->
+            <button id="btn-prev" type="button" aria-label="Предыдущий слайд" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200/80 disabled:opacity-35 disabled:pointer-events-none flex items-center justify-center text-slate-800 transition cursor-pointer shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+
+            <!-- Индикаторы-точки слайдов -->
+            <div class="flex flex-col items-center gap-1">
+                <div id="dock-dots" class="flex items-center gap-1.5"></div>
+                <div id="dock-counter" class="font-mono-num text-[10px] font-bold text-slate-600">
+                    (01) / 09
+                </div>
+            </div>
+
+            <!-- Кнопка Далее -->
+            <button id="btn-next" type="button" aria-label="Следующий слайд" class="w-10 h-10 rounded-full bg-gradient-to-r from-[#059669] to-[#10B981] hover:brightness-105 disabled:opacity-35 disabled:pointer-events-none flex items-center justify-center text-white transition cursor-pointer shrink-0 shadow-[0_4px_14px_rgba(16,185,129,0.35)]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- =========================================================================
+         МОДАЛЬНОЕ ОКНО: НАСТРОЙКА КОНТАКТОВ ПРЕДСТАВИТЕЛЬСТВА
+         ========================================================================= -->
+    <div id="modal-contacts" class="no-print fixed inset-0 bg-slate-900/45 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="liquid-glass bg-white/95 w-full max-w-md p-6 border border-white">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-extrabold text-slate-900">Настроить контакты в презентации</h3>
+                <button id="btn-close-contacts" type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer">✕</button>
+            </div>
+            <p class="text-xs text-slate-600 mb-4 leading-relaxed">
+                Укажите ваш регион/город, телефон, Telegram и почту. Данные автоматически подставятся на слайды <span class="font-mono-num text-[#059669] font-bold">(01)</span> и <span class="font-mono-num text-[#059669] font-bold">(09)</span> и сохранятся в браузере.
+            </p>
+            <form id="form-contacts" class="space-y-3">
+                <div>
+                    <label for="field-region" class="block text-xs font-bold text-slate-700 mb-1">Регион / Город</label>
+                    <input id="field-region" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#10B981]">
+                </div>
+                <div>
+                    <label for="field-phone" class="block text-xs font-bold text-slate-700 mb-1">Телефон</label>
+                    <input id="field-phone" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#10B981]">
+                </div>
+                <div>
+                    <label for="field-telegram" class="block text-xs font-bold text-slate-700 mb-1">Telegram</label>
+                    <input id="field-telegram" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#10B981]">
+                </div>
+                <div>
+                    <label for="field-email" class="block text-xs font-bold text-slate-700 mb-1">Электронная почта</label>
+                    <input id="field-email" type="email" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#10B981]">
+                </div>
+                <div>
+                    <label for="field-website" class="block text-xs font-bold text-slate-700 mb-1">Сайт</label>
+                    <input id="field-website" type="text" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#10B981]">
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button id="btn-cancel-contacts" type="button" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 cursor-pointer">Отмена</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#059669] hover:brightness-105 text-white text-xs font-extrabold cursor-pointer">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         МОДАЛЬНОЕ ОКНО: ОСТАВИТЬ ЗАЯВКУ НА ПОДКЛЮЧЕНИЕ
+         ========================================================================= -->
+    <div id="modal-lead" class="no-print fixed inset-0 bg-slate-900/45 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="liquid-glass-emerald bg-white/95 w-full max-w-md p-6 border border-emerald-200">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-lg font-extrabold text-slate-900">Подключить UDMPAY за 1 час</h3>
+                <button id="btn-close-lead" type="button" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 cursor-pointer">✕</button>
+            </div>
+            <p class="text-xs text-slate-700 mb-4 leading-relaxed">
+                Подключение — <strong class="text-slate-900">0 ₽</strong>, абонентская плата — <strong class="text-slate-900">0 ₽</strong>, ставка — <strong class="text-[#059669]">1,65%</strong>. Оставьте контакты или напишите нам в Telegram.
+            </p>
+            <form id="form-lead" class="space-y-3">
+                <div>
+                    <label for="lead-name" class="block text-xs font-bold text-slate-700 mb-1">Ваше имя / Название бизнеса</label>
+                    <input id="lead-name" type="text" required placeholder="Например: Алексей, Студия красоты" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#10B981]">
+                </div>
+                <div>
+                    <label for="lead-phone" class="block text-xs font-bold text-slate-700 mb-1">Телефон или Telegram</label>
+                    <input id="lead-phone" type="text" required placeholder="+7 (999) 000-00-00 или @username" class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-[#10B981]">
+                </div>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2">
+                    <a id="lead-tg-direct" href="https://t.me/udmpay_perm" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 text-center transition">
+                        Написать в Telegram
+                    </a>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#059669] hover:brightness-105 text-white text-xs font-extrabold transition cursor-pointer">
+                        Отправить заявку
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Всплывающее стеклянное уведомление (Toast вместо alert) -->
+    <div id="glass-toast" class="no-print fixed top-16 right-4 z-50 liquid-pill px-4 py-2.5 border-emerald-300 text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2 opacity-0 pointer-events-none transition-opacity duration-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
+        <span id="glass-toast-text">Готово</span>
+    </div>
+
+    <script>
+        (function () {
+            /* =================================================================
+               1. УПРАВЛЕНИЕ СЛАЙДАМИ, ДОК-БАРОМ, КЛАВИАТУРОЙ И СВАЙПАМИ
+               ================================================================= */
+            const slides = Array.from(document.querySelectorAll('.slide'));
+            const totalSlides = slides.length;
+            let currentIdx = 0;
+
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const dockDotsContainer = document.getElementById('dock-dots');
+            const dockCounter = document.getElementById('dock-counter');
+
+            slides.forEach((_, idx) => {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.ariaLabel = `Слайд ${idx + 1}`;
+                dot.className = 'h-2 rounded-full transition-all duration-300 cursor-pointer ' +
+                    (idx === 0 ? 'w-6 bg-[#10B981]' : 'w-2 bg-slate-300 hover:bg-slate-400');
+                dot.addEventListener('click', () => goToSlide(idx));
+                dockDotsContainer.appendChild(dot);
+            });
+
+            const dots = Array.from(dockDotsContainer.children);
+
+            function pad2(num) {
+                return String(num).padStart(2, '0');
+            }
+
+            function goToSlide(index) {
+                if (index < 0 || index >= totalSlides) return;
+                currentIdx = index;
+
+                slides.forEach((slide, idx) => {
+                    slide.classList.toggle('active', idx === currentIdx);
+                });
+
+                dots.forEach((dot, idx) => {
+                    if (idx === currentIdx) {
+                        dot.className = 'h-2 w-6 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.55)] transition-all duration-300 cursor-pointer';
+                    } else {
+                        dot.className = 'h-2 w-2 rounded-full bg-slate-300 hover:bg-slate-400 transition-all duration-300 cursor-pointer';
+                    }
+                });
+
+                dockCounter.textContent = `(${pad2(currentIdx + 1)}) / ${pad2(totalSlides)}`;
+                btnPrev.disabled = currentIdx === 0;
+                btnNext.disabled = currentIdx === totalSlides - 1;
+
+                if (window.innerWidth < 1024) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+
+            btnPrev.addEventListener('click', () => goToSlide(currentIdx - 1));
+            btnNext.addEventListener('click', () => goToSlide(currentIdx + 1));
+
+            document.querySelectorAll('[data-goto]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = Number(btn.getAttribute('data-goto'));
+                    if (!Number.isNaN(target)) goToSlide(target);
+                });
+            });
+
+            document.addEventListener('keydown', (e) => {
+                const isContactsOpen = !document.getElementById('modal-contacts').classList.contains('hidden');
+                const isLeadOpen = !document.getElementById('modal-lead').classList.contains('hidden');
+                if (isContactsOpen || isLeadOpen || ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                    if (e.key === 'Escape') {
+                        closeContactsModal();
+                        closeLeadModal();
+                    }
+                    return;
+                }
+
+                if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                    e.preventDefault();
+                    goToSlide(currentIdx + 1);
+                } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                    e.preventDefault();
+                    goToSlide(currentIdx - 1);
+                } else if (e.key === 'Home') {
+                    e.preventDefault();
+                    goToSlide(0);
+                } else if (e.key === 'End') {
+                    e.preventDefault();
+                    goToSlide(totalSlides - 1);
+                }
+            });
+
+            let swipeStartX = 0;
+            let swipeStartY = 0;
+            const deckViewport = document.getElementById('deck-viewport');
+
+            deckViewport.addEventListener('touchstart', (e) => {
+                if (e.target.type === 'range') return;
+                swipeStartX = e.changedTouches[0].clientX;
+                swipeStartY = e.changedTouches[0].clientY;
+            }, { passive: true });
+
+            deckViewport.addEventListener('touchend', (e) => {
+                if (e.target.type === 'range') return;
+                const deltaX = e.changedTouches[0].clientX - swipeStartX;
+                const deltaY = e.changedTouches[0].clientY - swipeStartY;
+                if (Math.abs(deltaX) > 52 && Math.abs(deltaX) > Math.abs(deltaY) * 1.35) {
+                    if (deltaX < 0) {
+                        goToSlide(currentIdx + 1);
+                    } else {
+                        goToSlide(currentIdx - 1);
+                    }
+                }
+            }, { passive: true });
+
+            /* =================================================================
+               2. ИНТЕРАКТИВНАЯ 3D-ВИЗУАЛИЗАЦИЯ НА ГЛАВНОМ ЭКРАНЕ (СЛАЙД 01)
+               ================================================================= */
+            const hero3dStage = document.getElementById('hero-3d-stage');
+            const stageButtons = Array.from(document.querySelectorAll('.stage-pill-btn'));
+            const nodeCards = Array.from(document.querySelectorAll('.node-3d-card'));
+            const heroCaption = document.getElementById('hero-3d-caption');
+
+            const STAGE_DESCRIPTIONS = {
+                all: 'Полный цикл за 3 секунды: клиент платит телефоном → чек уходит в ФНС → вам прилетает отчёт в ТГ.',
+                pay: '1. Оплата со смартфона: касание NFC (вместо Apple/Google Pay), QR-код или ссылка без установки приложений.',
+                cloud: '2. Облако UDMPAY (1,65%): встроенная касса 54-ФЗ и ОФД — экономия 66 500 ₽ на покупке терминалов и ФН.',
+                result: '3. Чек и контроль: электронный чек сразу в ФНС и на экране покупателя, уведомление продавцу в Telegram / MAX.'
+            };
+
+            function setHeroStage(stageKey) {
+                // Обновляем активную кнопку этапа
+                stageButtons.forEach(btn => {
+                    const isMatch = btn.getAttribute('data-stage') === stageKey;
+                    if (isMatch) {
+                        btn.className = 'stage-pill-btn active px-3 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm transition cursor-pointer';
+                    } else {
+                        btn.className = 'stage-pill-btn liquid-pill px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 transition cursor-pointer';
+                    }
+                });
+
+                // Подсвечиваем нужные 3D-узлы
+                nodeCards.forEach(card => {
+                    const nodeType = card.getAttribute('data-node');
+                    card.classList.remove('is-highlighted', 'is-dimmed');
+                    if (stageKey !== 'all') {
+                        if (nodeType === stageKey) {
+                            card.classList.add('is-highlighted');
+                        } else {
+                            card.classList.add('is-dimmed');
+                        }
+                    }
+                });
+
+                if (heroCaption && STAGE_DESCRIPTIONS[stageKey]) {
+                    heroCaption.textContent = STAGE_DESCRIPTIONS[stageKey];
+                }
+            }
+
+            stageButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setHeroStage(btn.getAttribute('data-stage'));
+                });
+            });
+
+            // Клик прямо по 3D-карточкам внутри сцены
+            nodeCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const nodeType = card.getAttribute('data-node');
+                    setHeroStage(nodeType);
+                });
+            });
+
+            // Клик по фону 3D-сцены возвращает режим «Весь цикл»
+            if (hero3dStage) {
+                hero3dStage.addEventListener('click', () => {
+                    setHeroStage('all');
+                });
+
+                // Плавный 3D-параллакс за курсором мыши на десктопе
+                hero3dStage.addEventListener('mousemove', (e) => {
+                    if (window.innerWidth < 1024) return;
+                    const rect = hero3dStage.getBoundingClientRect();
+                    const normX = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 .. 0.5
+                    const normY = (e.clientY - rect.top) / rect.height - 0.5;
+                    const rotateY = normX * 11; // градусов
+                    const rotateX = -normY * 9;
+                    hero3dStage.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+                });
+
+                hero3dStage.addEventListener('mouseleave', () => {
+                    hero3dStage.style.transform = 'rotateX(0deg) rotateY(0deg)';
+                });
+            }
+
+            /* =================================================================
+               3. ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ (TOAST)
+               ================================================================= */
+            let toastTimeout = null;
+            function showToast(text) {
+                const toast = document.getElementById('glass-toast');
+                const toastText = document.getElementById('glass-toast-text');
+                toastText.textContent = text;
+                toast.classList.remove('opacity-0');
+                toast.classList.add('opacity-100');
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('opacity-100');
+                    toast.classList.add('opacity-0');
+                }, 2800);
+            }
+
+            /* =================================================================
+               4. ИНТЕРАКТИВНЫЙ КАЛЬКУЛЯТОР ВЫГОДЫ (СЛАЙД 04)
+               ================================================================= */
+            const calcRange = document.getElementById('calc-turnover-range');
+            const calcValueEl = document.getElementById('calc-turnover-value');
+            const resStartupEl = document.getElementById('calc-res-startup');
+            const resStartupSubEl = document.getElementById('calc-res-startup-sub');
+            const resMonthlyEl = document.getElementById('calc-res-monthly');
+            const resYearlyEl = document.getElementById('calc-res-yearly');
+            const resProfitEl = document.getElementById('calc-res-profit');
+
+            const btnModeNew = document.getElementById('calc-mode-new');
+            const btnModeSwitch = document.getElementById('calc-mode-switch');
+            let isNewBusiness = true;
+
+            function formatRub(val) {
+                return Math.round(val).toLocaleString('ru-RU') + ' ₽';
+            }
+
+            function recalculate() {
+                const turnover = Number(calcRange.value);
+                // Рынок: 2.5% эквайринг + 14 480 ₽/мес (аренда кассы 8990 + учёт 3500 + CRM 1990)
+                // UDMPAY: 1.65% «Всё включено», абонентка 0 ₽
+                const marketCost = turnover * 0.025 + 14480;
+                const udmpayCost = turnover * 0.0165;
+                const monthlySavings = marketCost - udmpayCost;
+                const startupSavings = isNewBusiness ? 66500 : 0;
+                const yearlySavings = monthlySavings * 12 + startupSavings;
+                const potentialProfit = turnover * 0.112; // 112 000 ₽ с каждого 1 млн ₽ оборота
+
+                calcValueEl.textContent = formatRub(turnover);
+                resStartupEl.textContent = formatRub(startupSavings);
+                resStartupSubEl.textContent = isNewBusiness
+                    ? 'Касса, ФН, CRM и подключение = 0 ₽'
+                    : 'Бесплатный переход с действующей кассы';
+                resMonthlyEl.textContent = '+' + formatRub(monthlySavings);
+                resYearlyEl.textContent = '+' + formatRub(yearlySavings);
+                resProfitEl.textContent = '+' + formatRub(potentialProfit) + '/мес';
+            }
+
+            btnModeNew.addEventListener('click', () => {
+                isNewBusiness = true;
+                btnModeNew.className = 'px-3.5 py-1.5 rounded-full bg-[#059669] text-white text-xs font-extrabold transition cursor-pointer';
+                btnModeSwitch.className = 'px-3.5 py-1.5 rounded-full text-slate-600 hover:text-slate-900 text-xs font-bold transition cursor-pointer';
+                recalculate();
+            });
+
+            btnModeSwitch.addEventListener('click', () => {
+                isNewBusiness = false;
+                btnModeSwitch.className = 'px-3.5 py-1.5 rounded-full bg-[#059669] text-white text-xs font-extrabold transition cursor-pointer';
+                btnModeNew.className = 'px-3.5 py-1.5 rounded-full text-slate-600 hover:text-slate-900 text-xs font-bold transition cursor-pointer';
+                recalculate();
+            });
+
+            calcRange.addEventListener('input', recalculate);
+
+            document.querySelectorAll('.calc-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    calcRange.value = btn.getAttribute('data-val');
+                    recalculate();
+                });
+            });
+
+            recalculate();
+
+            /* =================================================================
+               5. ЖИВОЙ СИМУЛЯТОР ОПЛАТЫ НА СМАРТФОНЕ (СЛАЙД 05)
+               ================================================================= */
+            const simModeBtns = Array.from(document.querySelectorAll('.sim-mode-btn'));
+            const simModeBadge = document.getElementById('sim-mode-badge');
+            const simIconBox = document.getElementById('sim-icon-box');
+            const simPromptText = document.getElementById('sim-prompt-text');
+
+            const screenReady = document.getElementById('sim-screen-ready');
+            const screenProcessing = document.getElementById('sim-screen-processing');
+            const screenReceipt = document.getElementById('sim-screen-receipt');
+            const simTgToast = document.getElementById('sim-tg-toast');
+
+            const btnRunSim = document.getElementById('btn-run-sim');
+            const btnRunSimLabel = document.getElementById('btn-run-sim-label');
+            const simStatusHint = document.getElementById('sim-status-hint');
+
+            let simTimers = [];
+            let currentSimMode = 'nfc';
+
+            const SIM_MODES = {
+                nfc: {
+                    badge: 'NFC прикосновением',
+                    icon: 'NFC',
+                    prompt: 'Прикоснитесь смартфоном к модулю UDMPAY'
+                },
+                qr: {
+                    badge: 'QR-код на точке',
+                    icon: 'QR',
+                    prompt: 'Отсканируйте QR-код камерой смартфона'
+                },
+                link: {
+                    badge: 'Ссылка в мессенджер',
+                    icon: 'LINK',
+                    prompt: 'Покупатель открыл ссылку в Telegram / MAX'
+                }
+            };
+
+            function resetSimulator() {
+                simTimers.forEach(t => clearTimeout(t));
+                simTimers = [];
+
+                const cfg = SIM_MODES[currentSimMode];
+                simModeBadge.textContent = cfg.badge;
+                simIconBox.textContent = cfg.icon;
+                simPromptText.textContent = cfg.prompt;
+
+                screenReady.classList.remove('hidden');
+                screenProcessing.classList.add('hidden');
+                screenReceipt.classList.add('hidden');
+
+                simTgToast.classList.add('opacity-0', '-translate-y-3');
+                simTgToast.classList.remove('opacity-100', 'translate-y-0');
+
+                btnRunSimLabel.textContent = 'Провести оплату 2 400 ₽';
+                simStatusHint.textContent = 'Нажмите кнопку для демонстрации';
+            }
+
+            simModeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentSimMode = btn.getAttribute('data-sim-mode');
+                    simModeBtns.forEach(b => {
+                        if (b === btn) {
+                            b.className = 'sim-mode-btn active px-3.5 py-3 rounded-2xl bg-emerald-50 border-2 border-[#10B981] text-left transition cursor-pointer';
+                        } else {
+                            b.className = 'sim-mode-btn px-3.5 py-3 rounded-2xl bg-white/75 border border-slate-200 hover:bg-white text-left transition cursor-pointer';
+                        }
+                    });
+                    resetSimulator();
+                });
+            });
+
+            btnRunSim.addEventListener('click', () => {
+                resetSimulator();
+                btnRunSimLabel.textContent = 'Идёт оплата...';
+                simStatusHint.textContent = 'Подтверждение транзакции...';
+
+                screenReady.classList.add('hidden');
+                screenProcessing.classList.remove('hidden');
+
+                const t1 = setTimeout(() => {
+                    screenProcessing.classList.add('hidden');
+                    screenReceipt.classList.remove('hidden');
+                    btnRunSimLabel.textContent = 'Повторить оплату';
+                    simStatusHint.textContent = 'Готово! Чек по 54-ФЗ отправлен в ФНС';
+                }, 800);
+
+                const t2 = setTimeout(() => {
+                    simTgToast.classList.remove('opacity-0', '-translate-y-3');
+                    simTgToast.classList.add('opacity-100', 'translate-y-0');
+                }, 1300);
+
+                simTimers.push(t1, t2);
+            });
+
+            /* =================================================================
+               6. НАСТРОЙКА КОНТАКТОВ, ЗАЯВКА И ЭКСПОРТ В PDF
+               ================================================================= */
+            const DEFAULT_CONTACTS = {
+                region: 'Региональное представительство • Пермский край',
+                phone: '+7 (999) 123-55-77',
+                telegram: '@udmpay_perm',
+                email: 'perm@udmpay.ru',
+                website: 'udmpay.ru'
+            };
+
+            let contacts = { ...DEFAULT_CONTACTS };
+            try {
+                const stored = localStorage.getItem('udmpay_light_2026_contacts');
+                if (stored) contacts = { ...DEFAULT_CONTACTS, ...JSON.parse(stored) };
+            } catch (e) {}
+
+            function renderContacts() {
+                document.querySelectorAll('.js-region-text').forEach(el => el.textContent = contacts.region);
+                document.querySelectorAll('.js-phone-text').forEach(el => el.textContent = contacts.phone);
+                document.querySelectorAll('.js-telegram-text').forEach(el => el.textContent = contacts.telegram);
+                document.querySelectorAll('.js-email-text').forEach(el => el.textContent = contacts.email);
+                document.querySelectorAll('.js-website-text').forEach(el => el.textContent = contacts.website);
+
+                const phoneLink = document.getElementById('cta-phone-href');
+                if (phoneLink) {
+                    const digits = contacts.phone.replace(/[^+\d]/g, '');
+                    phoneLink.href = digits ? `tel:${digits}` : '#';
+                }
+
+                const tgDirect = document.getElementById('lead-tg-direct');
+                if (tgDirect) {
+                    const cleanHandle = contacts.telegram.replace(/^@/, '').trim();
+                    tgDirect.href = cleanHandle.startsWith('http') ? cleanHandle : `https://t.me/${cleanHandle}`;
+                }
+
+                document.getElementById('field-region').value = contacts.region;
+                document.getElementById('field-phone').value = contacts.phone;
+                document.getElementById('field-telegram').value = contacts.telegram;
+                document.getElementById('field-email').value = contacts.email;
+                document.getElementById('field-website').value = contacts.website;
+            }
+
+            const modalContacts = document.getElementById('modal-contacts');
+            function openContactsModal() {
+                modalContacts.classList.remove('hidden');
+                modalContacts.classList.add('flex');
+            }
+            function closeContactsModal() {
+                modalContacts.classList.add('hidden');
+                modalContacts.classList.remove('flex');
+            }
+
+            document.getElementById('btn-open-contacts').addEventListener('click', openContactsModal);
+            document.getElementById('btn-close-contacts').addEventListener('click', closeContactsModal);
+            document.getElementById('btn-cancel-contacts').addEventListener('click', closeContactsModal);
+            modalContacts.addEventListener('click', (e) => {
+                if (e.target === modalContacts) closeContactsModal();
+            });
+
+            document.getElementById('form-contacts').addEventListener('submit', (e) => {
+                e.preventDefault();
+                contacts = {
+                    region: document.getElementById('field-region').value.trim() || DEFAULT_CONTACTS.region,
+                    phone: document.getElementById('field-phone').value.trim() || DEFAULT_CONTACTS.phone,
+                    telegram: document.getElementById('field-telegram').value.trim() || DEFAULT_CONTACTS.telegram,
+                    email: document.getElementById('field-email').value.trim() || DEFAULT_CONTACTS.email,
+                    website: document.getElementById('field-website').value.trim() || DEFAULT_CONTACTS.website
+                };
+                try {
+                    localStorage.setItem('udmpay_light_2026_contacts', JSON.stringify(contacts));
+                } catch (err) {}
+                renderContacts();
+                closeContactsModal();
+                showToast('Контакты обновлены на слайдах (01) и (09)');
+            });
+
+            const modalLead = document.getElementById('modal-lead');
+            function openLeadModal() {
+                modalLead.classList.remove('hidden');
+                modalLead.classList.add('flex');
+            }
+            function closeLeadModal() {
+                modalLead.classList.add('hidden');
+                modalLead.classList.remove('flex');
+            }
+
+            document.getElementById('btn-open-lead').addEventListener('click', openLeadModal);
+            document.getElementById('btn-close-lead').addEventListener('click', closeLeadModal);
+            modalLead.addEventListener('click', (e) => {
+                if (e.target === modalLead) closeLeadModal();
+            });
+
+            document.getElementById('form-lead').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('lead-name').value.trim();
+                const contact = document.getElementById('lead-phone').value.trim();
+                const summary = `Заявка на подключение UDMPAY (${contacts.region})\nКлиент: ${name}\nКонтакт: ${contact}`;
+
+                const ta = document.createElement('textarea');
+                ta.value = summary;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (err) {}
+                document.body.removeChild(ta);
+
+                closeLeadModal();
+                document.getElementById('form-lead').reset();
+                showToast('Заявка сформирована и скопирована — менеджер свяжется с вами!');
+            });
+
+            document.getElementById('btn-copy-all').addEventListener('click', () => {
+                const text = `UDMPAY — ${contacts.region}\nПриём платежей по QR и NFC без кассы (54-ФЗ)\nПодключение: 0 ₽ | Абонентка: 0 ₽ | Ставка: 1,65%\nТелефон: ${contacts.phone}\nTelegram: ${contacts.telegram}\nПочта: ${contacts.email}\nСайт: ${contacts.website}`;
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Контакты скопированы в буфер обмена');
+                } catch (err) {
+                    showToast('Не удалось скопировать контакты');
+                }
+                document.body.removeChild(ta);
+            });
+
+            document.getElementById('btn-export-pdf').addEventListener('click', () => {
+                window.print();
+            });
+
+            renderContacts();
+            goToSlide(0);
+        })();
+    </script>
+</body>
+</html>
